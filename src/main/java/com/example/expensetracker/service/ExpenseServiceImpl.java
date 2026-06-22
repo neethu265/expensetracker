@@ -1,5 +1,7 @@
 package com.example.expensetracker.service;
 
+import com.example.expensetracker.dto.CursorExpenseResponseDTO;
+import com.example.expensetracker.dto.ExpenseDashboardDTO;
 import com.example.expensetracker.dto.ExpenseRequestDTO;
 import com.example.expensetracker.dto.ExpenseResponseDTO;
 import com.example.expensetracker.entity.Expense;
@@ -9,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -54,7 +57,36 @@ public class ExpenseServiceImpl implements ExpenseService {
                 .map(this::mapToResponse)
                 .toList();
     }
+    @Override
+    public List<ExpenseResponseDTO> getExpensesByCategory(String category) {
 
+        return repository.findByCategory(category)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    public ExpenseDashboardDTO getDashboard() {
+
+        List<Expense> expenses = repository.findAll();
+
+        double total = expenses.stream()
+                .mapToDouble(Expense::getAmount)
+                .sum();
+
+        double average =
+                expenses.isEmpty()
+                        ? 0
+                        : total / expenses.size();
+
+        return ExpenseDashboardDTO.builder()
+                .totalSpent(total)
+                .averageExpense(average)
+                .transactionCount(
+                        (long) expenses.size())
+                .build();
+    }
     @Override
     @CachePut(value = "expenses", key = "#id")
     public ExpenseResponseDTO updateExpense(Long id,
@@ -89,5 +121,19 @@ public class ExpenseServiceImpl implements ExpenseService {
                 .category(expense.getCategory())
                 .expenseDate(expense.getExpenseDate())
                 .build();
+    }
+    @Override
+    public List<ExpenseResponseDTO> getExpensesByOffset(
+            int offset,
+            int limit) {
+
+        int page = offset / limit;
+
+        return repository
+                .findAll(PageRequest.of(page, limit))
+                .getContent()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 }

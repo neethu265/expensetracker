@@ -1,10 +1,12 @@
 package com.example.expensetracker.controller;
 
+import com.example.expensetracker.dto.ExpenseDashboardDTO;
 import com.example.expensetracker.dto.ExpenseRequestDTO;
 import com.example.expensetracker.dto.ExpenseResponseDTO;
 import com.example.expensetracker.service.ExpenseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,5 +58,32 @@ public class ExpenseController {
         service.deleteExpense(id);
 
         return ResponseEntity.ok("Expense Deleted Successfully");
+    }
+    @GetMapping("/category/{category}")
+    public ResponseEntity<List<ExpenseResponseDTO>>
+    getByCategory(@PathVariable String category){
+
+        return ResponseEntity.ok(
+                service.getExpensesByCategory(category));
+    }
+    @GetMapping("/dashboard")
+    public ResponseEntity<ExpenseDashboardDTO>
+    getDashboard(){
+
+        return ResponseEntity.ok(
+                service.getDashboard());
+    }
+    @GetMapping("/offset")
+    public ResponseEntity<List<ExpenseResponseDTO>>
+    getExpensesOffset(
+
+            @RequestParam int offset,
+
+            @RequestParam int limit) {
+
+        return ResponseEntity.ok(
+                service.getExpensesByOffset(
+                        offset,
+                        limit));
     }
 }
