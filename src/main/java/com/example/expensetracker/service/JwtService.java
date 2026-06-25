@@ -30,6 +30,19 @@ public class JwtService {
                 .signWith(key)
                 .compact();
     }
+    private boolean isTokenExpired(
+            String token) {
+
+        Date expiration =
+                Jwts.parser()
+                        .verifyWith(key)
+                        .build()
+                        .parseSignedClaims(token)
+                        .getPayload()
+                        .getExpiration();
+
+        return expiration.before(new Date());
+    }
     public String extractUsername(String token) {
 
         return Jwts.parser()
@@ -44,6 +57,8 @@ public class JwtService {
             String username) {
 
         return extractUsername(token)
-                .equals(username);
+                .equals(username)
+                &&
+                !isTokenExpired(token);
     }
 }
