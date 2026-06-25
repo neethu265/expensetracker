@@ -16,10 +16,13 @@ public class JwtService {
     private final SecretKey key =
             Keys.hmacShaKeyFor(SECRET.getBytes());
 
-    public String generateToken(String username) {
+    public String generateToken(
+            String username,
+            String role) {
 
         return Jwts.builder()
                 .subject(username)
+                .claim("role", role)
                 .issuedAt(new Date())
                 .expiration(
                         new Date(

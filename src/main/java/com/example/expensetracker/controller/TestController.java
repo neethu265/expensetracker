@@ -16,21 +16,32 @@ public class TestController {
     @GetMapping("/token")
     public String token() {
 
-        return jwtService.generateToken("john");
+        return jwtService.generateToken(
+                "john",
+                "ROLE_USER"
+        );
     }
+
     @GetMapping("/username")
     public String username() {
 
         String token =
-                jwtService.generateToken("john");
+                jwtService.generateToken(
+                        "john",
+                        "ROLE_USER"
+                );
 
         return jwtService.extractUsername(token);
     }
+
     @GetMapping("/validate")
     public String validate() {
 
         String token =
-                jwtService.generateToken("john");
+                jwtService.generateToken(
+                        "john",
+                        "ROLE_USER"
+                );
 
         boolean valid =
                 jwtService.validateToken(

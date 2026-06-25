@@ -29,7 +29,10 @@ public class AuthServiceImpl implements AuthService {
                 .username(request.getUsername())
                 .password(
                         passwordEncoder.encode(
-                                request.getPassword()))
+                                request.getPassword()
+                        )
+                )
+                .role(request.getRole())
                 .build();
 
         userRepository.save(user);

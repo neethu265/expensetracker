@@ -26,7 +26,7 @@ public class CustomUserDetailsService
                 .builder()
                 .username(user.getUsername())
                 .password(user.getPassword())
-                .roles("USER")
+                .authorities(user.getRole())
                 .build();
     }
 }
