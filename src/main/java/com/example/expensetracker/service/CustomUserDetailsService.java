@@ -1,9 +1,11 @@
 package com.example.expensetracker.service;
 
-import com.example.expensetracker.entity.User;
 import com.example.expensetracker.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.*;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -17,16 +19,15 @@ public class CustomUserDetailsService
     public UserDetails loadUserByUsername(String username)
             throws UsernameNotFoundException {
 
-        User user = userRepository
-                .findByUsername(username)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found"));
+        com.example.expensetracker.entity.User appUser =
+                userRepository.findByUsername(username)
+                        .orElseThrow(() ->
+                                new UsernameNotFoundException("User not found"));
 
-        return org.springframework.security.core.userdetails.User
-                .builder()
-                .username(user.getUsername())
-                .password(user.getPassword())
-                .authorities(user.getRole())
+        return User.builder()
+                .username(appUser.getUsername())
+                .password(appUser.getPassword())
+                .authorities(appUser.getRole())
                 .build();
     }
 }

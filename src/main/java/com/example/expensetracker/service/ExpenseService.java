@@ -1,6 +1,5 @@
 package com.example.expensetracker.service;
 
-import com.example.expensetracker.dto.CursorExpenseResponseDTO;
 import com.example.expensetracker.dto.ExpenseDashboardDTO;
 import com.example.expensetracker.dto.ExpenseRequestDTO;
 import com.example.expensetracker.dto.ExpenseResponseDTO;
