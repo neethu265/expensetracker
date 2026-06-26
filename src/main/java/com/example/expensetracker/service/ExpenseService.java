@@ -16,6 +16,8 @@ public interface ExpenseService {
 
     ExpenseResponseDTO updateExpense(Long id, ExpenseRequestDTO dto);
 
+    ExpenseResponseDTO updateExpenseCategory(Long id, String category);
+
     List<ExpenseResponseDTO> getExpensesByCategory(String category);
 
     ExpenseDashboardDTO getDashboard();

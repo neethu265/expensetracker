@@ -13,6 +13,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -70,18 +72,22 @@ public class ExpenseServiceImpl implements ExpenseService {
 
         List<Expense> expenses = repository.findAll();
 
-        double total = expenses.stream()
-                .mapToDouble(Expense::getAmount)
-                .sum();
+        BigDecimal total = expenses.stream()
+                .map(Expense::getAmount)
+                .map(BigDecimal::valueOf)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        double average =
+        BigDecimal average =
                 expenses.isEmpty()
-                        ? 0
-                        : total / expenses.size();
+                        ? BigDecimal.ZERO
+                        : total.divide(
+                                BigDecimal.valueOf(expenses.size()),
+                                2,
+                                RoundingMode.HALF_UP);
 
         return ExpenseDashboardDTO.builder()
-                .totalSpent(total)
-                .averageExpense(average)
+                .totalSpent(total.doubleValue())
+                .averageExpense(average.doubleValue())
                 .transactionCount(
                         (long) expenses.size())
                 .build();
@@ -98,6 +104,23 @@ public class ExpenseServiceImpl implements ExpenseService {
         expense.setTitle(dto.getTitle());
         expense.setAmount(dto.getAmount());
         expense.setCategory(dto.getCategory());
+
+        Expense updated = repository.save(expense);
+
+        return mapToResponse(updated);
+    }
+
+    @Override
+    @CachePut(value = "expenses", key = "#id")
+    public ExpenseResponseDTO updateExpenseCategory(
+            Long id,
+            String category) {
+
+        Expense expense = repository.findById(id)
+                .orElseThrow(() ->
+                        new ExpenseNotFoundException("Expense not found"));
+
+        expense.setCategory(category);
 
         Expense updated = repository.save(expense);
 

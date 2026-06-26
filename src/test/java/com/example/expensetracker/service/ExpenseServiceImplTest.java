@@ -11,8 +11,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -76,5 +79,31 @@ class ExpenseServiceImplTest {
         assertEquals(0, dashboard.getTotalSpent());
         assertEquals(0, dashboard.getAverageExpense());
         assertEquals(0, dashboard.getTransactionCount());
+    }
+
+    @Test
+    void shouldUpdateExpenseCategoryOnly() {
+
+        Expense expense = Expense.builder()
+                .expenseId(1L)
+                .title("Lunch")
+                .amount(150.0)
+                .category("Food")
+                .expenseDate(LocalDate.now())
+                .build();
+
+        when(repository.findById(1L))
+                .thenReturn(Optional.of(expense));
+        when(repository.save(any(Expense.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = expenseService.updateExpenseCategory(
+                1L,
+                "Travel");
+
+        assertEquals("Lunch", response.getTitle());
+        assertEquals(150.0, response.getAmount());
+        assertEquals("Travel", response.getCategory());
+        verify(repository).save(expense);
     }
 }

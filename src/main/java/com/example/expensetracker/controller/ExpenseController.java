@@ -1,6 +1,7 @@
 package com.example.expensetracker.controller;
 
 import com.example.expensetracker.dto.ExpenseDashboardDTO;
+import com.example.expensetracker.dto.ExpenseCategoryUpdateDTO;
 import com.example.expensetracker.dto.ExpenseRequestDTO;
 import com.example.expensetracker.dto.ExpenseResponseDTO;
 import com.example.expensetracker.service.ExpenseService;
@@ -49,6 +50,17 @@ public class ExpenseController {
 
         return ResponseEntity.ok(
                 service.updateExpense(id, dto));
+    }
+
+    @PatchMapping("/{id}/category")
+    public ResponseEntity<ExpenseResponseDTO> updateExpenseCategory(
+            @PathVariable Long id,
+            @Valid @RequestBody ExpenseCategoryUpdateDTO dto) {
+
+        return ResponseEntity.ok(
+                service.updateExpenseCategory(
+                        id,
+                        dto.getCategory()));
     }
 
     @DeleteMapping("/{id}")
