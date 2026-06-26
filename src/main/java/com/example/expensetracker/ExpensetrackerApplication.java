@@ -23,16 +23,25 @@ public class ExpensetrackerApplication {
 
         return args -> {
 
-            if (repository.findByUsername("neethu").isEmpty()) {
+            repository.findByUsername("neethu")
+                    .ifPresentOrElse(user -> {
+                        if (user.getRole() == null ||
+                                user.getRole().isBlank()) {
+
+                            user.setRole("ROLE_ADMIN");
+                            repository.save(user);
+                        }
+                    }, () -> {
 
                 repository.save(
                         User.builder()
                                 .username("neethu")
                                 .password(
                                         encoder.encode("neethu123"))
+                                .role("ROLE_ADMIN")
                                 .build()
                 );
-            }
+                    });
         };
     }
 }

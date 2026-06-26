@@ -4,13 +4,17 @@ import com.example.expensetracker.dto.ExpenseDashboardDTO;
 import com.example.expensetracker.dto.ExpenseRequestDTO;
 import com.example.expensetracker.dto.ExpenseResponseDTO;
 import com.example.expensetracker.entity.Expense;
+import com.example.expensetracker.entity.User;
 import com.example.expensetracker.exception.ExpenseNotFoundException;
 import com.example.expensetracker.repository.ExpenseRepository;
+import com.example.expensetracker.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -23,15 +27,18 @@ import java.util.List;
 public class ExpenseServiceImpl implements ExpenseService {
 
     private final ExpenseRepository repository;
+    private final UserRepository userRepository;
 
     @Override
     public ExpenseResponseDTO addExpense(ExpenseRequestDTO dto) {
+        User user = getCurrentUser();
 
         Expense expense = Expense.builder()
                 .title(dto.getTitle())
                 .amount(dto.getAmount())
                 .category(dto.getCategory())
                 .expenseDate(LocalDate.now())
+                .user(user)
                 .build();
 
         Expense saved = repository.save(expense);
@@ -40,12 +47,12 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    @Cacheable(value = "expenses", key = "#id")
+    @Cacheable(
+            value = "expenses",
+            key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() + ':' + #id")
     public ExpenseResponseDTO getExpenseById(Long id) {
 
-        Expense expense = repository.findById(id)
-                .orElseThrow(() ->
-                        new ExpenseNotFoundException("Expense not found"));
+        Expense expense = findCurrentUserExpense(id);
 
         return mapToResponse(expense);
     }
@@ -53,15 +60,20 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     public List<ExpenseResponseDTO> getAllExpenses() {
 
-        return repository.findAll()
+        return repository
+                .findByUserUsername(getCurrentUsername())
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
     }
+
     @Override
     public List<ExpenseResponseDTO> getExpensesByCategory(String category) {
 
-        return repository.findByCategory(category)
+        return repository
+                .findByCategoryAndUserUsername(
+                        category,
+                        getCurrentUsername())
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -70,7 +82,8 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     public ExpenseDashboardDTO getDashboard() {
 
-        List<Expense> expenses = repository.findAll();
+        List<Expense> expenses =
+                repository.findByUserUsername(getCurrentUsername());
 
         BigDecimal total = expenses.stream()
                 .map(Expense::getAmount)
@@ -92,14 +105,15 @@ public class ExpenseServiceImpl implements ExpenseService {
                         (long) expenses.size())
                 .build();
     }
+
     @Override
-    @CachePut(value = "expenses", key = "#id")
+    @CachePut(
+            value = "expenses",
+            key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() + ':' + #id")
     public ExpenseResponseDTO updateExpense(Long id,
                                             ExpenseRequestDTO dto) {
 
-        Expense expense = repository.findById(id)
-                .orElseThrow(() ->
-                        new ExpenseNotFoundException("Expense not found"));
+        Expense expense = findCurrentUserExpense(id);
 
         expense.setTitle(dto.getTitle());
         expense.setAmount(dto.getAmount());
@@ -111,14 +125,14 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    @CachePut(value = "expenses", key = "#id")
+    @CachePut(
+            value = "expenses",
+            key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() + ':' + #id")
     public ExpenseResponseDTO updateExpenseCategory(
             Long id,
             String category) {
 
-        Expense expense = repository.findById(id)
-                .orElseThrow(() ->
-                        new ExpenseNotFoundException("Expense not found"));
+        Expense expense = findCurrentUserExpense(id);
 
         expense.setCategory(category);
 
@@ -128,10 +142,31 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    @CacheEvict(value = "expenses", key = "#id")
+    @CacheEvict(
+            value = "expenses",
+            key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() + ':' + #id")
     public void deleteExpense(Long id) {
 
-        repository.deleteById(id);
+        Expense expense = findCurrentUserExpense(id);
+
+        repository.delete(expense);
+    }
+
+    @Override
+    public List<ExpenseResponseDTO> getExpensesByOffset(
+            int offset,
+            int limit) {
+
+        int page = offset / limit;
+
+        return repository
+                .findByUserUsername(
+                        getCurrentUsername(),
+                        PageRequest.of(page, limit))
+                .getContent()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     private ExpenseResponseDTO mapToResponse(Expense expense) {
@@ -144,18 +179,38 @@ public class ExpenseServiceImpl implements ExpenseService {
                 .expenseDate(expense.getExpenseDate())
                 .build();
     }
-    @Override
-    public List<ExpenseResponseDTO> getExpensesByOffset(
-            int offset,
-            int limit) {
 
-        int page = offset / limit;
+    private Expense findCurrentUserExpense(Long id) {
 
         return repository
-                .findAll(PageRequest.of(page, limit))
-                .getContent()
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
+                .findByExpenseIdAndUserUsername(
+                        id,
+                        getCurrentUsername())
+                .orElseThrow(() ->
+                        new ExpenseNotFoundException("Expense not found"));
+    }
+
+    private User getCurrentUser() {
+
+        return userRepository
+                .findByUsername(getCurrentUsername())
+                .orElseThrow(() ->
+                        new IllegalStateException("Authenticated user not found"));
+    }
+
+    private String getCurrentUsername() {
+
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        if (authentication == null ||
+                authentication.getName() == null) {
+
+            throw new IllegalStateException("No authenticated user found");
+        }
+
+        return authentication.getName();
     }
 }

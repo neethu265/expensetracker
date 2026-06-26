@@ -3,6 +3,9 @@ package com.example.expensetracker.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -22,4 +25,11 @@ public class User {
     private String password;
 
     private String role;
+
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    @Builder.Default
+    private List<Expense> expenses = new ArrayList<>();
 }

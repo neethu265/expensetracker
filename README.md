@@ -134,3 +134,35 @@ Category update request:
 - `/admin/**` requires `ROLE_ADMIN`.
 - `/user/**` allows `ROLE_USER` or `ROLE_ADMIN`.
 - All other routes require a valid JWT.
+
+## Admin User Management
+
+Admin routes require a JWT for a user with `ROLE_ADMIN`. The seeded local admin is `neethu` / `neethu123`.
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/admin/users` | List all users |
+| `GET` | `/admin/users/{id}` | Get one user |
+| `POST` | `/admin/users` | Create a user |
+| `PUT` | `/admin/users/{id}` | Update username, role, and optionally password |
+| `DELETE` | `/admin/users/{id}` | Delete a user and their expenses |
+
+Create user request:
+
+```json
+{
+  "username": "admin2",
+  "password": "secret",
+  "role": "ROLE_ADMIN"
+}
+```
+
+Update user request:
+
+```json
+{
+  "username": "user1",
+  "password": "new-password",
+  "role": "ROLE_USER"
+}
+```

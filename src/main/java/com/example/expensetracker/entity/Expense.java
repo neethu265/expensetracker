@@ -25,4 +25,8 @@ public class Expense {
     private String category;
 
     private LocalDate expenseDate;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 }
